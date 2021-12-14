@@ -22,9 +22,9 @@ __dirs := $(shell mkdir -p ${BUILDDIR})
 
 COMMON_FLAGS := -Wall -Wextra  -g -I${COMMON_INCLUDES}
 HOST_FLAGS := ${COMMON_FLAGS} -std=c11 -O3 `dpu-pkg-config --cflags --libs dpu` -DNR_TASKLETS=${NR_TASKLETS} -DNR_DPUS=${NR_DPUS} -lm
-DPU_FLAGS := ${COMMON_FLAGS} -O2 -DNR_TASKLETS=${NR_TASKLETS}
+DPU_FLAGS := ${COMMON_FLAGS} -O2 -DNR_TASKLETS=${NR_TASKLETS} 
 
-all: ${HOST_TARGET} ${DPU_TARGET}
+all: ${HOST_TARGET} ${DPU_TARGET} -O2 -ftree-vectorize -fopt-info
 
 ${CONF}:
 	$(RM) $(call conf_filename,*,*)

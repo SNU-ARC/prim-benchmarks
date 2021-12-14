@@ -36,8 +36,9 @@
 
 #include "../../support/common.h"
 #include "../../support/timer.h"
+#include <sys/mman.h>
 
-#include "vec_red.h"
+extern "C" int vec_vvred_asm(int, T* C, T* A);
 
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"
@@ -46,7 +47,6 @@
 // Pointer declaration
 static T* A;
 static T* C;
-static T* C2;
 
 /**
 * @brief creates input arrays
@@ -54,7 +54,7 @@ static T* C2;
 */
 static void read_input(T* A, unsigned int nr_elements) {
     //srand(0);
-    printf("nr_elements\t%u\t", nr_elements);
+    printf("nr_elements\t%u\t\n", nr_elements);
     for (unsigned int i = 0; i < nr_elements; i++) {
         //A[i] = (T) (rand()) % 2;
         A[i] = i;
@@ -66,6 +66,7 @@ static void read_input(T* A, unsigned int nr_elements) {
 */
 static T reduction_host(T* A, unsigned int nr_elements) {
     T count = 0;
+    #pragma omp parallel for reduction(+:count)
     for (unsigned int i = 0; i < nr_elements; i++) {
         count += A[i];
     }
@@ -103,7 +104,7 @@ struct Params input_params(int argc, char **argv) {
     p.n_warmup      = 1;
     p.n_reps        = 3;
     p.exp           = 0;
-    p.n_threads     = 1;
+    p.n_threads     = 4;
 
     int opt;
     while((opt = getopt(argc, argv, "hi:w:e:x:t:")) >= 0) {
@@ -132,20 +133,21 @@ struct Params input_params(int argc, char **argv) {
 * @brief Main of the Host Application.
 */
 int main(int argc, char **argv) {
+    if (mlockall(MCL_CURRENT | MCL_FUTURE)) {
+        perror("mlockall failed:");
+        return 0;
+    }
+
     struct Params p = input_params(argc, argv);
 
     unsigned int nr_of_dpus = 1;
     
     unsigned int i = 0;
-    const unsigned int input_size = p.exp == 0 ? p.input_size * nr_of_dpus : p.input_size;
+    const unsigned int input_size = p.exp == 0 ? p.input_size * nr_of_dpus : p.input_size; // const unsigned int
     assert(input_size % (p.n_threads) == 0 && "Input size!");
 
     // Input/output allocation
     A = (T*)malloc(input_size * sizeof(T));
-    C = (T*)malloc(input_size * sizeof(T));
-    C2 = (T*)malloc(input_size * sizeof(T));
-    T *bufferA = A;
-    T *bufferC = C2;
 	
     T count = 0;
     T count_host = 0;
@@ -158,8 +160,6 @@ int main(int argc, char **argv) {
     Timer timer;
     float time_gpu = 0;
 
-    //thrust::omp::vector<T> h_output(input_size);
-
     // Loop over main kernel
     for(int rep = 0; rep < p.n_warmup + p.n_reps; rep++) {
         // Compute output on CPU (performance comparison and verification purposes)
@@ -170,25 +170,36 @@ int main(int argc, char **argv) {
             stop(&timer, 0);
 
         // Compute output on CPU (performance comparison and verification purposes)
+        C = (T*)calloc(input_size, sizeof(T));
         if(rep >= p.n_warmup)
             start(&timer, 1, rep - p.n_warmup);
-        count_hwacha = vec_vvred_asm(input_size, A);
+        int size = vec_vvred_asm(input_size, C, A);
+        count_hwacha = 0;
+        for (int i = 0; i < size; i++)
+            count_hwacha += C[i];
         if(rep >= p.n_warmup)
             stop(&timer, 1);
-
-        /*
-        thrust::omp::vector<T> d_input(input_size);
-        memcpy(thrust::raw_pointer_cast(&d_input[0]), A, input_size * sizeof(T));
+        free(C);
 
         omp_set_num_threads(p.n_threads);
-
         if(rep >= p.n_warmup)
             start(&timer, 2, rep - p.n_warmup);
-        count = thrust::reduce(thrust::omp::par, d_input.begin(), d_input.end());
+        count = reduction_host(A, input_size);
         if(rep >= p.n_warmup)
             stop(&timer, 2);
-        h_output = d_input;
-        */
+        omp_set_num_threads(1);
+
+        // Check output
+        bool status = true;
+        if(count_hwacha != count_host || count_hwacha != count) { 
+            status = false;
+            printf("%lu -- %lu -- %lu\n", count_hwacha, count_host, count);
+        }
+        if (status) {
+            printf("[" ANSI_COLOR_GREEN "OK" ANSI_COLOR_RESET "] Outputs are equal\n");
+        } else {
+            printf("[" ANSI_COLOR_RED "ERROR" ANSI_COLOR_RESET "] Outputs differ!\n");
+        }   
     }
 
     // Print timing results
@@ -196,25 +207,13 @@ int main(int argc, char **argv) {
     print(&timer, 0, p.n_reps);
     printf("Hwacha ");
     print(&timer, 1, p.n_reps);
-    //printf("Thrust ");
-    //print(&timer, 2, p.n_reps);
-
-    // Check output
-    bool status = true;
-    if(count_hwacha != count_host) { 
-        status = false;
-        printf("%lu -- %lu\n", count, count_host);
-    }
-	if (status) {
-        printf("[" ANSI_COLOR_GREEN "OK" ANSI_COLOR_RESET "] Outputs are equal\n");
-    } else {
-        printf("[" ANSI_COLOR_RED "ERROR" ANSI_COLOR_RESET "] Outputs differ!\n");
-    }
+    printf("4 threads ");
+    print(&timer, 2, p.n_reps);
+    printf("\n");
 
     // Deallocation
     free(A);
-    free(C);
-    free(C2);
 	
+    munlockall();
     return 0;
 }

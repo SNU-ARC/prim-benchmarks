@@ -6,4 +6,4 @@ Compilation instructions
 
 Execution instructions
 
-    ./needle 46080 10 4
+    ./needle 10000 10 4

@@ -1,3 +1,4 @@
+/*
 void allocate_dense(size_t rows,size_t  cols, double*** dense) {
 
   *dense = malloc(sizeof(double)*rows);
@@ -8,6 +9,7 @@ void allocate_dense(size_t rows,size_t  cols, double*** dense) {
   }
 
 }
+*/
 
 void print_mat(double** A, size_t rows, size_t cols) {
   for (size_t i = 0; i < rows; i++) {
@@ -24,6 +26,6 @@ void print_vec(double* b, size_t rows) {
   }
 }
 
-void gemv(double** A, double* x, size_t rows, size_t cols, double** b);
-void make_hilbert_mat(size_t rows, size_t cols, double*** A);
-double sum_vec(double* vec, size_t rows);
+void gemv(double* A, double* x, size_t m, size_t n, size_t k, double* b, int t);
+void make_hilbert_mat(size_t r, size_t c, size_t r_, size_t c_, double* A);
+double sum_vec(double* vec, size_t m, size_t k);

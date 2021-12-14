@@ -42,7 +42,7 @@ SRC=main.cpp kernel.cpp
 EXE=trns
 
 all:
-	$(CXX) $(CXX_FLAGS) $(SRC) $(LIB) -o $(EXE)
+	$(CXX) $(CXX_FLAGS) $(SRC) $(LIB) -o $(EXE) -O2 -ftree-vectorize -fopt-info
 
 clean:
 	rm -f $(EXE)

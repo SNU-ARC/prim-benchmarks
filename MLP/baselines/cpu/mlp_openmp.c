@@ -11,11 +11,16 @@
 #include <getopt.h>
 #include <assert.h>
 #include <stdint.h>
+#include <string.h>
 #include "../../support/timer.h"
 #include "../../support/common.h"
+#include <sys/mman.h>
+#include <omp.h>
 
 T** A;
 T* B;
+T* B2;
+T* B3;
 T* C;
 
 // Create input arrays
@@ -39,21 +44,46 @@ static void init_data(T** A, T* B, unsigned int m_size, unsigned int n_size){
 }
 
 // Compute output in the host
-static void mlp_host(T* C, T** A, T* B, unsigned int m_size, unsigned int n_size) {
+static void mlp_host(T* C, T** A, T* B, unsigned int m_size, unsigned int n_size, int t) {
 	for (unsigned int nl = 0; nl < NUM_LAYERS; nl++){
 		for (unsigned int m = 0; m < m_size; m++){
 			C[m] = 0;
 		}
-		#pragma omp parallel for
+
+    omp_set_num_threads(t);
+    #pragma omp parallel for
 		for (unsigned int m = 0; m < m_size; m++){
 			for (unsigned int n = 0; n < n_size; n++){
 				C[m] += A[nl][m * n_size + n] * B[n];
 			}
 			C[m] = max(0, C[m]);
 		}
+
 		for (unsigned int n = 0; n < n_size; n++){
 			B[n] = C[n];
 		}
+	}
+}
+
+// Compute output in the hwacha
+static void mlp_hwacha(T* C, T** A, T* B, unsigned int m_size, unsigned int n_size) {
+	for (unsigned int nl = 0; nl < NUM_LAYERS; nl++){
+		for (unsigned int m = 0; m < m_size; m++){
+			C[m] = 0;
+		}
+		
+		for (unsigned int m = 0; m < m_size; m++) {
+      T * result = (T *)calloc(n_size, sizeof(T));
+      int size = vec_vvmlp_asm(n_size, result, &A[nl][m * n_size], B);
+
+      T count_hwacha = 0;
+      for (int j = 0; j < size; j++) {
+        count_hwacha += result[j];
+      }
+			C[m] = max(0, count_hwacha);
+      free(result);
+		}
+    vec_vvcopy_asm(n_size, B, C);
 	}
 }
 
@@ -101,7 +131,7 @@ void usage() {
     int opt;
     while((opt = getopt(argc, argv, "hd:r:i:")) >= 0) {
       switch(opt) {
-        case 'h':
+        case 'h':printf("\n");
         usage();
         exit(0);
         break;
@@ -124,10 +154,16 @@ void usage() {
   * @brief Main of the Host Application.
   */
   int main(int argc, char **argv) {
+    if (mlockall(MCL_CURRENT | MCL_FUTURE)) {
+      perror("mlockall failed:");
+      return 0;
+    }
 
     struct Params p = input_params(argc, argv);
     uint64_t n_size = 8192;
     uint64_t m_size = 20480;
+    //uint64_t n_size = 20000;
+    //uint64_t m_size = 20000;
 
     Timer timer;
     A = malloc(NUM_LAYERS * sizeof(T*));
@@ -139,22 +175,81 @@ void usage() {
     // Create an input file with arbitrary data.
     init_data(A, B, m_size, n_size);
 
-    start(&timer, 0, 1);
-    mlp_host(C, A, B, n_size, m_size);
+    start(&timer, 0, 0);
+    mlp_host(C, A, B, n_size, m_size, 1);
     stop(&timer, 0);
 
-    uint32_t sum = mlp_host_sum(n_size, m_size);
-   
-    printf("Kernel ");
+    free(A);
+    free(C);
+    A = malloc(NUM_LAYERS * sizeof(T*));
+    for(int l = 0; l < NUM_LAYERS; l++)
+        A[l] = malloc(n_size*m_size*sizeof(unsigned int));
+    B2 = malloc(m_size*sizeof(unsigned int));
+    C = malloc(m_size*sizeof(unsigned int));
+
+    // Create an input file with arbitrary data.
+    init_data(A, B2, m_size, n_size);
+
+    start(&timer, 1, 0);
+    mlp_hwacha(C, A, B2, n_size, m_size);
+    stop(&timer, 1);
+
+    free(A);
+    free(C);
+    A = malloc(NUM_LAYERS * sizeof(T*));
+    for(int l = 0; l < NUM_LAYERS; l++)
+        A[l] = malloc(n_size*m_size*sizeof(unsigned int));
+    B3 = malloc(m_size*sizeof(unsigned int));
+    C = malloc(m_size*sizeof(unsigned int));
+
+    // Create an input file with arbitrary data.
+    init_data(A, B3, m_size, n_size);
+
+    start(&timer, 2, 0);
+    mlp_host(C, A, B3, n_size, m_size, 4);
+    stop(&timer, 2);
+
+    bool correct = true;
+    bool hwacha_wrong = false;
+    for (int i = 0; i < n_size; i++) {
+        if (B[i] != B2[i] || B[i] != B3[i]) {
+            correct = false;
+	    if (B[i] != B2[i]) hwacha_wrong = true;
+            break;
+        }
+    }
+
+    printf("******************************\n");
+    if (correct) {
+        printf("Hwacha works correctly.\n");
+    } else if (hwacha_wrong) {
+        printf("\n*** Hwacha outputs wrong result! ***\n");
+
+        printf("<<< Results >>>\n");
+        for (int i = 0; i < n_size; i++) {
+          printf("%d : %d %d\n", i, B[i], B2[i]);
+        }
+        printf("\n");
+    } else {
+	    printf("Hwacha works well, but multi-threading doesn't.\n");
+    }
+    printf("******************************\n");
+    printf("CPU ");
     print(&timer, 0, 1);
     printf("\n");
-
-    printf("SUM = %d \n", sum);
+    printf("Hwacha ");
+    print(&timer, 1, 1);
+    printf("\n");
+    printf("4 threads ");
+    print(&timer, 2, 1);
+    printf("\n");
 
     for(int l = 0; l < NUM_LAYERS; l++)
         free(A[l]);
     free(A);
     free(B);
+    free(B2);
+    free(B3);
     free(C);
 
     return 0;

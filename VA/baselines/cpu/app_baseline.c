@@ -41,7 +41,6 @@ void  *create_test_file(unsigned int nr_elements) {
 
 /**
 * @brief compute output in the host
-*/
 static void vector_addition_host(unsigned int nr_elements, int t) {
     omp_set_num_threads(t);
     #pragma omp parallel for
@@ -49,6 +48,7 @@ static void vector_addition_host(unsigned int nr_elements, int t) {
         C[i] = A[i] + B[i];
     }
 }
+*/
 
 // Params ---------------------------------------------------------------------
 typedef struct Params {
@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
     Timer timer;
     start(&timer, 0, 0);
 
-    vector_addition_host(file_size, p.n_threads);
+    vec_vvadd_sum(file_size, C, A, B);
 	
     stop(&timer, 0);
     printf("Kernel ");
@@ -129,4 +129,4 @@ int main(int argc, char **argv) {
     free(C);
 
    return 0;
- }
+}

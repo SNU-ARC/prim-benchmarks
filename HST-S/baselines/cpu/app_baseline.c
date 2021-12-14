@@ -17,6 +17,7 @@
 #include <getopt.h>
 #include <assert.h>
 #include <stdint.h>
+#include <sys/mman.h>
 
 #include <omp.h>
 
@@ -26,6 +27,8 @@
 // Pointer declaration
 static T* A;
 static unsigned int* histo_host;
+static unsigned int* histo_hwacha;
+static unsigned int* histo_host_4;
 
 typedef struct Params {
     unsigned int   input_size;
@@ -67,7 +70,6 @@ static void read_input(T* A, const Params p) {
 * @brief compute output in the host
 */
 static void histogram_host(unsigned int* histo, T* A, unsigned int bins, unsigned int nr_elements, int exp, unsigned int nr_of_dpus, int t) {
-
     omp_set_num_threads(t);
 
     if(!exp){
@@ -114,9 +116,9 @@ struct Params input_params(int argc, char **argv) {
     p.bins          = 256;
     p.n_warmup      = 1;
     p.n_reps        = 3;
-    p.n_threads     = 8;
+    p.n_threads     = 1; // 8
     p.exp           = 1;
-    p.file_name     = "../../input/image_VanHateren.iml";
+    p.file_name     = "./image_VanHateren.iml";
 
     int opt;
     while((opt = getopt(argc, argv, "hi:b:w:e:f:x:t:")) >= 0) {
@@ -147,6 +149,10 @@ struct Params input_params(int argc, char **argv) {
 * @brief Main of the Host Application.
 */
 int main(int argc, char **argv) {
+    if (mlockall(MCL_CURRENT | MCL_FUTURE)) {
+        perror("mlockall failed:");
+        return 0;
+    }
 
     struct Params p = input_params(argc, argv);
 
@@ -163,26 +169,63 @@ int main(int argc, char **argv) {
     T *bufferA = A;
     if(!p.exp)
         histo_host = malloc(nr_of_dpus * p.bins * sizeof(unsigned int));
-    else
+    else {
         histo_host = malloc(p.bins * sizeof(unsigned int));
+        histo_hwacha = malloc(p.bins * sizeof(unsigned int));
+        histo_host_4 = malloc(p.bins * sizeof(unsigned int));
+    }
 
     // Create an input file with arbitrary data.
     read_input(A, p);
 
-    Timer timer;
-    start(&timer, 0, 0);
-
 	if(!p.exp)
             memset(histo_host, 0, nr_of_dpus * p.bins * sizeof(unsigned int));
-    else
-            memset(histo_host, 0, p.bins * sizeof(unsigned int));
+    else {
+        memset(histo_host, 0, p.bins * sizeof(unsigned int));
+        memset(histo_hwacha, 0, p.bins * sizeof(unsigned int));
+    }
 
-    histogram_host(histo_host, A, p.bins, input_size, p.exp, nr_of_dpus, p.n_threads);
-
+    Timer timer;
+    start(&timer, 0, 0);
+    histogram_host(histo_host, A, p.bins, input_size, p.exp, nr_of_dpus, 1);
     stop(&timer, 0);
-    printf("Kernel ");
+
+    start(&timer, 1, 0);
+    vec_vvhst_asm(input_size, A, histo_hwacha, p.bins);
+    stop(&timer, 1);
+
+    start(&timer, 2, 0);
+    histogram_host(histo_host_4, A, p.bins, input_size, p.exp, nr_of_dpus, 4);
+    stop(&timer, 2);
+
+    bool correct = true;
+    for (int i = 0; i < p.bins; i++) {
+        if (histo_host[i] != histo_hwacha[i]) {
+            printf("Hwacha wrong %d, %d %d\n", i, histo_host[i], histo_hwacha[i]);
+            correct = false;
+        }
+
+        if (histo_host[i] != histo_host_4[i]) {
+            printf("Omp wrong %d, %d %d\n", i, histo_host[i], histo_host_4[i]);
+        }
+    }
+
+    printf("******************************\n");
+    if (correct) printf("Hwacha correct!\n");
+    else printf("Hwacha wrong T_T\n");
+    printf("******************************\n");
+
+    printf("CPU ");
     print(&timer, 0, 1);
     printf("\n");
+    printf("Hwacha ");
+    print(&timer, 1, 1);
+    printf("\n");
+    printf("4 threads ");
+    print(&timer, 2, 1);
+    printf("\n");
+
+    munlockall();
 	
     return 0;
 }

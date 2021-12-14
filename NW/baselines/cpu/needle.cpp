@@ -1,13 +1,19 @@
 #define LIMIT -999
-//#define TRACE
+#define TRACE
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
 #include <sys/time.h>
 #include <omp.h>
+#include <sys/mman.h>
+#include "../../support/timer.h"
 #define OPENMP
 //#define NUM_THREAD 4
+
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
 
 #define BLOCK_SIZE 16
 
@@ -15,14 +21,7 @@
 // declaration, forward
 void runTest( int argc, char** argv);
 
-// Returns the current system time in microseconds 
-long long get_time()
-{
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return (tv.tv_sec * 1000000) + tv.tv_usec;
-
-}
+extern "C" void vec_vvcopy_asm(int, int* dest, int* source);
 
 #ifdef OMP_OFFLOAD
 #pragma omp declare target
@@ -42,10 +41,10 @@ int maximum( int a,
     else
         return(k);
 }
+
 #ifdef OMP_OFFLOAD
 #pragma omp end declare target
 #endif
-
 
 int blosum62[24][24] = {
     { 4, -1, -2, -2,  0, -1, -1,  0, -2, -1, -1, -1, -1, -2, -1,  1,  0, -3, -2,  0, -2, -1,  0, -4},
@@ -74,12 +73,6 @@ int blosum62[24][24] = {
     {-4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4,  1}
 };
 
-double gettime() {
-    struct timeval t;
-    gettimeofday(&t,NULL);
-    return t.tv_sec+t.tv_usec*1e-6;
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // Program main
 ////////////////////////////////////////////////////////////////////////////////
@@ -106,15 +99,19 @@ void nw_optimized(int *input_itemsets, int *output_itemsets, int *referrence,
 #ifdef OMP_OFFLOAD
     int transfer_size = max_rows * max_cols;
 #pragma omp target data map(to: max_cols, penalty, referrence[0:transfer_size]) map(input_itemsets[0:transfer_size])
+
     {
 
 #pragma omp target 
 #endif
         for( int blk = 1; blk <= (max_cols-1)/BLOCK_SIZE; blk++ )
         {
+/*
 #ifdef OPENMP
 #pragma omp parallel for schedule(static) shared(input_itemsets, referrence) firstprivate(blk, max_rows, max_cols, penalty)
 #endif
+*/
+
             for( int b_index_x = 0; b_index_x < blk; ++b_index_x)
             {
                 int b_index_y = blk - 1 - b_index_x;
@@ -124,7 +121,6 @@ void nw_optimized(int *input_itemsets, int *output_itemsets, int *referrence,
                 // Copy referrence to local memory
                 for ( int i = 0; i < BLOCK_SIZE; ++i )
                 {
-#pragma omp simd
                     for ( int j = 0; j < BLOCK_SIZE; ++j)
                     {
                         reference_l[i*BLOCK_SIZE + j] = referrence[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE +  j + 1];
@@ -134,7 +130,6 @@ void nw_optimized(int *input_itemsets, int *output_itemsets, int *referrence,
                 // Copy input_itemsets to local memory
                 for ( int i = 0; i < BLOCK_SIZE + 1; ++i )
                 {
-#pragma omp simd
                     for ( int j = 0; j < BLOCK_SIZE + 1; ++j)
                     {
                         input_itemsets_l[i*(BLOCK_SIZE + 1) + j] = input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i) + b_index_x*BLOCK_SIZE +  j];
@@ -155,7 +150,6 @@ void nw_optimized(int *input_itemsets, int *output_itemsets, int *referrence,
                 // Copy results to global memory
                 for ( int i = 0; i < BLOCK_SIZE; ++i )
                 {
-#pragma omp simd
                     for ( int j = 0; j < BLOCK_SIZE; ++j)
                     {
                         input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE +  j + 1] = input_itemsets_l[(i + 1)*(BLOCK_SIZE+1) + j + 1];
@@ -169,12 +163,16 @@ void nw_optimized(int *input_itemsets, int *output_itemsets, int *referrence,
 
 #ifdef OMP_OFFLOAD
 #pragma omp target
-#endif
+#endif 
+
         for ( int blk = 2; blk <= (max_cols-1)/BLOCK_SIZE; blk++ )
         {
+/*
 #ifdef OPENMP
 #pragma omp parallel for schedule(static) shared(input_itemsets, referrence) firstprivate(blk, max_rows, max_cols, penalty)
 #endif
+*/
+
             for( int b_index_x = blk - 1; b_index_x < (max_cols-1)/BLOCK_SIZE; ++b_index_x)
             {
                 int b_index_y = (max_cols-1)/BLOCK_SIZE + blk - 2 - b_index_x;
@@ -185,7 +183,6 @@ void nw_optimized(int *input_itemsets, int *output_itemsets, int *referrence,
                 // Copy referrence to local memory
                 for ( int i = 0; i < BLOCK_SIZE; ++i )
                 {
-#pragma omp simd
                     for ( int j = 0; j < BLOCK_SIZE; ++j)
                     {
                         reference_l[i*BLOCK_SIZE + j] = referrence[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE +  j + 1];
@@ -195,7 +192,6 @@ void nw_optimized(int *input_itemsets, int *output_itemsets, int *referrence,
                 // Copy input_itemsets to local memory
                 for ( int i = 0; i < BLOCK_SIZE + 1; ++i )
                 {
-#pragma omp simd
                     for ( int j = 0; j < BLOCK_SIZE + 1; ++j)
                     {
                         input_itemsets_l[i*(BLOCK_SIZE + 1) + j] = input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i) + b_index_x*BLOCK_SIZE +  j];
@@ -216,7 +212,6 @@ void nw_optimized(int *input_itemsets, int *output_itemsets, int *referrence,
                 // Copy results to global memory
                 for ( int i = 0; i < BLOCK_SIZE; ++i )
                 {
-#pragma omp simd
                     for ( int j = 0; j < BLOCK_SIZE; ++j)
                     {
                         input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE +  j + 1] = input_itemsets_l[(i + 1)*(BLOCK_SIZE+1) + j +1];
@@ -228,7 +223,99 @@ void nw_optimized(int *input_itemsets, int *output_itemsets, int *referrence,
 #ifdef OMP_OFFLOAD
     }
 #endif
+}
 
+void nw_optimized_hwacha(int *input_itemsets, int *output_itemsets, int *referrence,
+        int max_rows, int max_cols, int penalty)
+{
+    for( int blk = 1; blk <= (max_cols-1)/BLOCK_SIZE; blk++ )
+    {
+        for( int b_index_x = 0; b_index_x < blk; ++b_index_x)
+        {
+            int b_index_y = blk - 1 - b_index_x;
+            int input_itemsets_l[(BLOCK_SIZE + 1) *(BLOCK_SIZE+1)] __attribute__ ((aligned (64)));
+            int reference_l[BLOCK_SIZE * BLOCK_SIZE] __attribute__ ((aligned (64)));
+
+            // Copy referrence to local memory
+            for ( int i = 0; i < BLOCK_SIZE; ++i )
+            {
+                // reference_l[i*BLOCK_SIZE + j] = referrence[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE +  j + 1];
+                vec_vvcopy_asm(BLOCK_SIZE, &reference_l[i*BLOCK_SIZE], &referrence[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE + 1]);
+            }
+
+            // Copy input_itemsets to local memory
+            for ( int i = 0; i < BLOCK_SIZE + 1; ++i )
+            {
+                // input_itemsets_l[i*(BLOCK_SIZE + 1) + j] = input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i) + b_index_x*BLOCK_SIZE +  j];
+                vec_vvcopy_asm(BLOCK_SIZE + 1, &input_itemsets_l[i*(BLOCK_SIZE + 1)], &input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i) + b_index_x*BLOCK_SIZE]);
+            }
+
+            // Compute
+            for ( int i = 1; i < BLOCK_SIZE + 1; ++i )
+            {    
+                for ( int j = 1; j < BLOCK_SIZE + 1; ++j)
+                {
+                    input_itemsets_l[i*(BLOCK_SIZE + 1) + j] = maximum( 
+                        input_itemsets_l[(i - 1)*(BLOCK_SIZE + 1) + j - 1] + reference_l[(i - 1)*BLOCK_SIZE + j - 1],
+                        input_itemsets_l[i*(BLOCK_SIZE + 1) + j - 1] - penalty,
+                        input_itemsets_l[(i - 1)*(BLOCK_SIZE + 1) + j] - penalty);  
+                }
+            }
+
+            // Copy results to global memory
+            for ( int i = 0; i < BLOCK_SIZE; ++i )
+            {
+                //input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE +  j + 1] = input_itemsets_l[(i + 1)*(BLOCK_SIZE+1) + j + 1];
+                vec_vvcopy_asm(BLOCK_SIZE, &input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE + 1], &input_itemsets_l[(i + 1)*(BLOCK_SIZE+1) + 1]);
+            }
+
+        }
+    }    
+
+    printf("Processing bottom-right matrix\n");
+
+    for ( int blk = 2; blk <= (max_cols-1)/BLOCK_SIZE; blk++ )
+    {
+        for( int b_index_x = blk - 1; b_index_x < (max_cols-1)/BLOCK_SIZE; ++b_index_x)
+        {
+            int b_index_y = (max_cols-1)/BLOCK_SIZE + blk - 2 - b_index_x;
+
+            int input_itemsets_l[(BLOCK_SIZE + 1) *(BLOCK_SIZE+1)] __attribute__ ((aligned (64)));
+            int reference_l[BLOCK_SIZE * BLOCK_SIZE] __attribute__ ((aligned (64)));
+
+            // Copy referrence to local memory
+            for ( int i = 0; i < BLOCK_SIZE; ++i )
+            {
+                //reference_l[i*BLOCK_SIZE + j] = referrence[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE +  j + 1];
+                vec_vvcopy_asm(BLOCK_SIZE, &reference_l[i*BLOCK_SIZE], &referrence[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE + 1]);
+            }
+
+            // Copy input_itemsets to local memory
+            for ( int i = 0; i < BLOCK_SIZE + 1; ++i )
+            {
+                //input_itemsets_l[i*(BLOCK_SIZE + 1) + j] = input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i) + b_index_x*BLOCK_SIZE +  j];
+                vec_vvcopy_asm(BLOCK_SIZE + 1, &input_itemsets_l[i*(BLOCK_SIZE + 1)], &input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i) + b_index_x*BLOCK_SIZE]);
+            }
+
+            // Compute
+            for ( int i = 1; i < BLOCK_SIZE + 1; ++i )
+            {
+                for (int j = 1; j < BLOCK_SIZE + 1; ++j) {
+                    input_itemsets_l[i*(BLOCK_SIZE + 1) + j] = maximum( 
+                        input_itemsets_l[(i - 1)*(BLOCK_SIZE + 1) + j - 1] + reference_l[(i - 1)*BLOCK_SIZE + j - 1],
+                        input_itemsets_l[i*(BLOCK_SIZE + 1) + j - 1] - penalty,
+                        input_itemsets_l[(i - 1)*(BLOCK_SIZE + 1) + j] - penalty);
+                }
+            }
+
+            // Copy results to global memory
+            for ( int i = 0; i < BLOCK_SIZE; ++i )
+            {
+                //input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE +  j + 1] = input_itemsets_l[(i + 1)*(BLOCK_SIZE+1) + j +1];
+                vec_vvcopy_asm(BLOCK_SIZE, &input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE + 1], &input_itemsets_l[(i + 1)*(BLOCK_SIZE+1) + 1]);
+            }
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -237,12 +324,17 @@ void nw_optimized(int *input_itemsets, int *output_itemsets, int *referrence,
     void
 runTest( int argc, char** argv) 
 {
+    if (mlockall(MCL_CURRENT | MCL_FUTURE)) {
+        perror("mlockall failed:");
+        return;
+    }
+
     int max_rows, max_cols, penalty;
     int *input_itemsets, *output_itemsets, *referrence;
+    int *input_itemsets_hwacha, *input_itemsets_4threads;
     //int *matrix_cuda, *matrix_cuda_out, *referrence_cuda;
     //int size;
     int omp_num_threads;
-
 
     // the lengths of the two sequences should be able to divided by 16.
     // And at current stage  max_rows needs to equal max_cols
@@ -261,8 +353,9 @@ runTest( int argc, char** argv)
     max_cols = max_cols + 1;
     referrence = (int *)malloc( max_rows * max_cols * sizeof(int) );
     input_itemsets = (int *)malloc( max_rows * max_cols * sizeof(int) );
+    input_itemsets_hwacha = (int *)malloc( max_rows * max_cols * sizeof(int) );
+    input_itemsets_4threads = (int *)malloc( max_rows * max_cols * sizeof(int) );
     output_itemsets = (int *)malloc( max_rows * max_cols * sizeof(int) );
-
 
     if (!input_itemsets)
         fprintf(stderr, "error: can not allocate memory");
@@ -272,18 +365,19 @@ runTest( int argc, char** argv)
     for (int i = 0 ; i < max_cols; i++){
         for (int j = 0 ; j < max_rows; j++){
             input_itemsets[i*max_cols+j] = 0;
+            input_itemsets_hwacha[i*max_cols+j] = 0;
+            input_itemsets_4threads[i*max_cols+j] = 0;
         }
     }
 
     printf("Start Needleman-Wunsch\n");
 
     for( int i=1; i< max_rows ; i++){    //please define your own sequence. 
-        input_itemsets[i*max_cols] = rand() % 10 + 1;
+        input_itemsets[i*max_cols] = input_itemsets_hwacha[i*max_cols] = input_itemsets_4threads[i*max_cols] = rand() % 10 + 1;
     }
     for( int j=1; j< max_cols ; j++){    //please define your own sequence.
-        input_itemsets[j] = rand() % 10 + 1;
+        input_itemsets[j] = input_itemsets_hwacha[j] = input_itemsets_4threads[j] = rand() % 10 + 1;
     }
-
 
     for (int i = 1 ; i < max_cols; i++){
         for (int j = 1 ; j < max_rows; j++){
@@ -292,24 +386,59 @@ runTest( int argc, char** argv)
     }
 
     for( int i = 1; i< max_rows ; i++)
-        input_itemsets[i*max_cols] = -i * penalty;
+        input_itemsets[i*max_cols] = input_itemsets_hwacha[i*max_cols] = input_itemsets_4threads[i*max_cols] = -i * penalty;
     for( int j = 1; j< max_cols ; j++)
-        input_itemsets[j] = -j * penalty;
-
-
+        input_itemsets[j] = input_itemsets_hwacha[j] = input_itemsets_4threads[j] = -j * penalty;
 
     //Compute top-left matrix 
     printf("Num of threads: %d\n", omp_num_threads);
     printf("Processing top-left matrix\n");
 
-    long long start_time = get_time();
-
+    Timer timer;
+    omp_set_num_threads(1);
+    start(&timer, 0, 0);
     nw_optimized( input_itemsets, output_itemsets, referrence,
             max_rows, max_cols, penalty );
+    stop(&timer, 0);
 
-    long long end_time = get_time();
+    start(&timer, 1, 0);
+    nw_optimized_hwacha( input_itemsets_hwacha, output_itemsets, referrence,
+            max_rows, max_cols, penalty );
+    stop(&timer, 1);
 
-    printf("Total time: %.3f seconds\n", ((float) (end_time - start_time)) / (1000*1000));
+    omp_set_num_threads(4);
+    start(&timer, 2, 0);
+    nw_optimized( input_itemsets_4threads, output_itemsets, referrence,
+            max_rows, max_cols, penalty );
+    stop(&timer, 2);
+
+    bool correct = true;
+    for (int i = 0; i < max_rows*max_cols; i++) {
+        if (input_itemsets[i] != input_itemsets_hwacha[i]) {
+            printf("Diff hwacha %d : %d %d\n", i, input_itemsets[i], input_itemsets_hwacha[i]);
+            correct = false;
+        }
+
+        if (input_itemsets[i] != input_itemsets_4threads[i]) {
+            printf("Diff 4 threads %d : %d %d\n", i, input_itemsets[i], input_itemsets_4threads[i]);
+        }
+    }
+
+    if (correct) {
+        printf("[" ANSI_COLOR_GREEN "OK" ANSI_COLOR_RESET "] Outputs are equal\n");
+    } else {
+        printf("[" ANSI_COLOR_RED "ERROR" ANSI_COLOR_RESET "] Outputs differ!\n");
+    }
+
+    printf("CPU ");
+    print(&timer, 0, 1);
+    printf("\n");
+    printf("Hwacha ");
+    print(&timer, 1, 1);
+    printf("\n");
+    printf("4 threads ");
+    print(&timer, 2, 1);
+    printf("\n");
 
 #define TRACEBACK
 #ifdef TRACEBACK
@@ -376,7 +505,5 @@ runTest( int argc, char** argv)
     free(input_itemsets);
     free(output_itemsets);
 
+    munlockall();
 }
-
-
-
