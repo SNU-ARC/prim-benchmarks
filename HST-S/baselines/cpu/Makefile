@@ -3,7 +3,7 @@ all:
 clean:
 	rm hist
 firesim:
-	riscv64-unknown-linux-gnu-gcc -march=rv64gcxhwacha -fopenmp vec_vvhst_asm.S app_baseline.c -o hst
+	riscv64-unknown-linux-gnu-gcc -march=rv64gcxhwacha -fopenmp vec_vvhst_asm.S app_baseline.c -o hst -static
 spike:
 	spike --extension=hwacha pk hst
 transfer:

@@ -3,7 +3,7 @@ all:
 clean:
 	rm va
 firesim:
-	riscv64-unknown-linux-gnu-gcc -march=rv64gcxhwacha -fopenmp vec_vvadd_asm.S app_baseline.c -o va
+	riscv64-unknown-linux-gnu-gcc -march=rv64gcxhwacha -fopenmp vec_vvadd_asm.S app_baseline.c -o va -static
 spike:
 	spike --extension=hwacha pk va
 transfer:

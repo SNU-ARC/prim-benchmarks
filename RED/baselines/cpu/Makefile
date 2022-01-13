@@ -9,4 +9,4 @@ spike:
 transfer:
 	scp -i ../../../../firesim.pem red centos@34.213.49.152:/home/centos/firesim/sw/firesim-software/workloads/hwacha_fedora/overlay/root/modify
 firesim:
-	riscv64-unknown-linux-gnu-g++ -D INT32 -march=rv64gcxhwacha -fopenmp app_baseline.cpp vec_vvred_asm.S -o red
+	riscv64-unknown-linux-gnu-g++ -D INT32 -march=rv64gcxhwacha -fopenmp app_baseline.cpp vec_vvred_asm.S -o red -static
