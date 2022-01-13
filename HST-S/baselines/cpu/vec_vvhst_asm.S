@@ -11,7 +11,7 @@
 # a3 has unsigned int bins
 
 vec_vvhst_asm:
-    vsetcfg 2, 1
+    vsetcfg 1, 1
     li t3, 12
     li t4, 1
     li t6, 4
@@ -40,5 +40,5 @@ vvhst :
     vsra vv0, vv0, vs3
     vmul vv0, vv0, vs5
     vadd vv0, vv0, vs1
-    vamoadd.w vv1, 0(vv0), vs4
+    vamoadd.w vv0, 0(vv0), vs4
     vstop

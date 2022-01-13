@@ -1,0 +1,236 @@
+Intel(R) Advisor can now assist with vectorization and show optimization
+  report messages with your source code.
+See "https://software.intel.com/en-us/intel-advisor-xe" for details.
+
+
+Begin optimization report for: main(int, char **)
+
+    Report from: Vector optimizations [vec]
+
+
+LOOP BEGIN at needle.cpp(365,5) inlined into needle.cpp(82,5)
+   remark #25460: No loop optimizations reported
+
+   LOOP BEGIN at needle.cpp(366,9) inlined into needle.cpp(82,5)
+   <Peeled loop for vectorization>
+   LOOP END
+
+   LOOP BEGIN at needle.cpp(366,9) inlined into needle.cpp(82,5)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at needle.cpp(366,9) inlined into needle.cpp(82,5)
+   <Alternate Alignment Vectorized Loop>
+   LOOP END
+
+   LOOP BEGIN at needle.cpp(366,9) inlined into needle.cpp(82,5)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at needle.cpp(382,5) inlined into needle.cpp(82,5)
+   remark #25460: No loop optimizations reported
+
+   LOOP BEGIN at needle.cpp(383,9) inlined into needle.cpp(82,5)
+      remark #25460: No loop optimizations reported
+   LOOP END
+
+   LOOP BEGIN at needle.cpp(383,9) inlined into needle.cpp(82,5)
+   <Remainder>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at needle.cpp(390,5) inlined into needle.cpp(82,5)
+<Peeled loop for vectorization>
+LOOP END
+
+LOOP BEGIN at needle.cpp(390,5) inlined into needle.cpp(82,5)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at needle.cpp(390,5) inlined into needle.cpp(82,5)
+<Alternate Alignment Vectorized Loop>
+LOOP END
+
+LOOP BEGIN at needle.cpp(390,5) inlined into needle.cpp(82,5)
+<Remainder loop for vectorization>
+LOOP END
+===========================================================================
+
+Begin optimization report for: nw_optimized_hwacha(int *, int *, int *, int, int, int)
+
+    Report from: Vector optimizations [vec]
+
+
+LOOP BEGIN at needle.cpp(231,5)
+   remark #25460: No loop optimizations reported
+
+   LOOP BEGIN at needle.cpp(233,9)
+      remark #25460: No loop optimizations reported
+
+      LOOP BEGIN at needle.cpp(254,13)
+         remark #25460: No loop optimizations reported
+
+         LOOP BEGIN at needle.cpp(256,29)
+         LOOP END
+      LOOP END
+   LOOP END
+LOOP END
+
+LOOP BEGIN at needle.cpp(277,5)
+   remark #25460: No loop optimizations reported
+
+   LOOP BEGIN at needle.cpp(279,9)
+      remark #25460: No loop optimizations reported
+
+      LOOP BEGIN at needle.cpp(301,13)
+         remark #25460: No loop optimizations reported
+
+         LOOP BEGIN at needle.cpp(303,28)
+         LOOP END
+      LOOP END
+   LOOP END
+LOOP END
+===========================================================================
+
+Begin optimization report for: nw_optimized(int *, int *, int *, int, int, int)
+
+    Report from: Vector optimizations [vec]
+
+
+LOOP BEGIN at needle.cpp(107,9)
+   remark #25460: No loop optimizations reported
+
+   LOOP BEGIN at needle.cpp(115,13)
+      remark #25460: No loop optimizations reported
+
+      LOOP BEGIN at needle.cpp(131,17)
+         remark #25460: No loop optimizations reported
+
+         LOOP BEGIN at needle.cpp(133,21)
+            remark #15300: LOOP WAS VECTORIZED
+         LOOP END
+
+         LOOP BEGIN at needle.cpp(133,21)
+         <Remainder loop for vectorization>
+         LOOP END
+      LOOP END
+
+      LOOP BEGIN at needle.cpp(140,17)
+         remark #25460: No loop optimizations reported
+
+         LOOP BEGIN at needle.cpp(142,33)
+         LOOP END
+      LOOP END
+
+      LOOP BEGIN at needle.cpp(151,17)
+
+         LOOP BEGIN at needle.cpp(153,21)
+            remark #15300: LOOP WAS VECTORIZED
+         LOOP END
+      LOOP END
+
+      LOOP BEGIN at needle.cpp(122,17)
+
+         LOOP BEGIN at needle.cpp(124,21)
+            remark #15300: LOOP WAS VECTORIZED
+         LOOP END
+      LOOP END
+   LOOP END
+LOOP END
+
+LOOP BEGIN at needle.cpp(168,9)
+   remark #25460: No loop optimizations reported
+
+   LOOP BEGIN at needle.cpp(176,13)
+      remark #25460: No loop optimizations reported
+
+      LOOP BEGIN at needle.cpp(193,17)
+         remark #25460: No loop optimizations reported
+
+         LOOP BEGIN at needle.cpp(195,21)
+            remark #15300: LOOP WAS VECTORIZED
+         LOOP END
+
+         LOOP BEGIN at needle.cpp(195,21)
+         <Remainder loop for vectorization>
+         LOOP END
+      LOOP END
+
+      LOOP BEGIN at needle.cpp(202,17)
+         remark #25460: No loop optimizations reported
+
+         LOOP BEGIN at needle.cpp(204,33)
+         LOOP END
+      LOOP END
+
+      LOOP BEGIN at needle.cpp(213,17)
+
+         LOOP BEGIN at needle.cpp(215,21)
+            remark #15300: LOOP WAS VECTORIZED
+         LOOP END
+      LOOP END
+
+      LOOP BEGIN at needle.cpp(184,17)
+
+         LOOP BEGIN at needle.cpp(186,21)
+            remark #15300: LOOP WAS VECTORIZED
+         LOOP END
+      LOOP END
+   LOOP END
+LOOP END
+===========================================================================
+
+Begin optimization report for: runTest(int, char **)
+
+    Report from: Vector optimizations [vec]
+
+
+LOOP BEGIN at needle.cpp(365,5)
+   remark #25460: No loop optimizations reported
+
+   LOOP BEGIN at needle.cpp(366,9)
+   <Peeled loop for vectorization>
+   LOOP END
+
+   LOOP BEGIN at needle.cpp(366,9)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at needle.cpp(366,9)
+   <Alternate Alignment Vectorized Loop>
+   LOOP END
+
+   LOOP BEGIN at needle.cpp(366,9)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at needle.cpp(382,5)
+   remark #25460: No loop optimizations reported
+
+   LOOP BEGIN at needle.cpp(383,9)
+      remark #25460: No loop optimizations reported
+   LOOP END
+
+   LOOP BEGIN at needle.cpp(383,9)
+   <Remainder>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at needle.cpp(390,5)
+<Peeled loop for vectorization>
+LOOP END
+
+LOOP BEGIN at needle.cpp(390,5)
+   remark #15300: LOOP WAS VECTORIZED
+LOOP END
+
+LOOP BEGIN at needle.cpp(390,5)
+<Alternate Alignment Vectorized Loop>
+LOOP END
+
+LOOP BEGIN at needle.cpp(390,5)
+<Remainder loop for vectorization>
+LOOP END
+===========================================================================

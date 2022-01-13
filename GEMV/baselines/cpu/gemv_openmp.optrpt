@@ -1,0 +1,168 @@
+Intel(R) Advisor can now assist with vectorization and show optimization
+  report messages with your source code.
+See "https://software.intel.com/en-us/intel-advisor-xe" for details.
+
+
+Begin optimization report for: main(int, char **)
+
+    Report from: Vector optimizations [vec]
+
+
+LOOP BEGIN at gemv_openmp.c(47,3)
+   remark #25460: No loop optimizations reported
+
+   LOOP BEGIN at gemv_openmp.c(48,5)
+   <Peeled loop for vectorization>
+   LOOP END
+
+   LOOP BEGIN at gemv_openmp.c(48,5)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at gemv_openmp.c(48,5)
+   <Alternate Alignment Vectorized Loop>
+   LOOP END
+
+   LOOP BEGIN at gemv_openmp.c(48,5)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at gemv_openmp.c(126,3) inlined into gemv_openmp.c(57,3)
+   remark #25460: No loop optimizations reported
+
+   LOOP BEGIN at gemv_openmp.c(128,7) inlined into gemv_openmp.c(57,3)
+      remark #25460: No loop optimizations reported
+
+      LOOP BEGIN at gemv_openmp.c(127,5) inlined into gemv_openmp.c(57,3)
+      <Peeled loop for vectorization>
+      LOOP END
+
+      LOOP BEGIN at gemv_openmp.c(127,5) inlined into gemv_openmp.c(57,3)
+         remark #15301: PERMUTED LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at gemv_openmp.c(127,5) inlined into gemv_openmp.c(57,3)
+      <Alternate Alignment Vectorized Loop>
+      LOOP END
+
+      LOOP BEGIN at gemv_openmp.c(127,5) inlined into gemv_openmp.c(57,3)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+LOOP END
+
+LOOP BEGIN at gemv_openmp.c(126,3) inlined into gemv_openmp.c(65,3)
+   remark #25460: No loop optimizations reported
+
+   LOOP BEGIN at gemv_openmp.c(128,7) inlined into gemv_openmp.c(65,3)
+      remark #25460: No loop optimizations reported
+
+      LOOP BEGIN at gemv_openmp.c(127,5) inlined into gemv_openmp.c(65,3)
+      <Peeled loop for vectorization>
+      LOOP END
+
+      LOOP BEGIN at gemv_openmp.c(127,5) inlined into gemv_openmp.c(65,3)
+         remark #15301: PERMUTED LOOP WAS VECTORIZED
+      LOOP END
+
+      LOOP BEGIN at gemv_openmp.c(127,5) inlined into gemv_openmp.c(65,3)
+      <Alternate Alignment Vectorized Loop>
+      LOOP END
+
+      LOOP BEGIN at gemv_openmp.c(127,5) inlined into gemv_openmp.c(65,3)
+      <Remainder loop for vectorization>
+      LOOP END
+   LOOP END
+LOOP END
+
+LOOP BEGIN at gemv_openmp.c(151,3) inlined into gemv_openmp.c(68,18)
+   remark #25460: No loop optimizations reported
+
+   LOOP BEGIN at gemv_openmp.c(152,5) inlined into gemv_openmp.c(68,18)
+   <Peeled loop for vectorization>
+   LOOP END
+
+   LOOP BEGIN at gemv_openmp.c(152,5) inlined into gemv_openmp.c(68,18)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at gemv_openmp.c(152,5) inlined into gemv_openmp.c(68,18)
+   <Remainder loop for vectorization>
+      remark #15301: REMAINDER LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at gemv_openmp.c(152,5) inlined into gemv_openmp.c(68,18)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at gemv_openmp.c(151,3) inlined into gemv_openmp.c(69,18)
+   remark #25460: No loop optimizations reported
+
+   LOOP BEGIN at gemv_openmp.c(152,5) inlined into gemv_openmp.c(69,18)
+   <Peeled loop for vectorization>
+   LOOP END
+
+   LOOP BEGIN at gemv_openmp.c(152,5) inlined into gemv_openmp.c(69,18)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at gemv_openmp.c(152,5) inlined into gemv_openmp.c(69,18)
+   <Remainder loop for vectorization>
+      remark #15301: REMAINDER LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at gemv_openmp.c(152,5) inlined into gemv_openmp.c(69,18)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+
+LOOP BEGIN at gemv_openmp.c(151,3) inlined into gemv_openmp.c(70,18)
+   remark #25460: No loop optimizations reported
+
+   LOOP BEGIN at gemv_openmp.c(152,5) inlined into gemv_openmp.c(70,18)
+   <Peeled loop for vectorization>
+   LOOP END
+
+   LOOP BEGIN at gemv_openmp.c(152,5) inlined into gemv_openmp.c(70,18)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at gemv_openmp.c(152,5) inlined into gemv_openmp.c(70,18)
+   <Remainder loop for vectorization>
+      remark #15301: REMAINDER LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at gemv_openmp.c(152,5) inlined into gemv_openmp.c(70,18)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+===========================================================================
+
+Begin optimization report for: sum_vec(double *, size_t, size_t)
+
+    Report from: Vector optimizations [vec]
+
+
+LOOP BEGIN at gemv_openmp.c(151,3)
+   remark #25460: No loop optimizations reported
+
+   LOOP BEGIN at gemv_openmp.c(152,5)
+   <Peeled loop for vectorization>
+   LOOP END
+
+   LOOP BEGIN at gemv_openmp.c(152,5)
+      remark #15300: LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at gemv_openmp.c(152,5)
+   <Remainder loop for vectorization>
+      remark #15301: REMAINDER LOOP WAS VECTORIZED
+   LOOP END
+
+   LOOP BEGIN at gemv_openmp.c(152,5)
+   <Remainder loop for vectorization>
+   LOOP END
+LOOP END
+===========================================================================

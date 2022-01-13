@@ -240,14 +240,14 @@ void nw_optimized_hwacha(int *input_itemsets, int *output_itemsets, int *referre
             for ( int i = 0; i < BLOCK_SIZE; ++i )
             {
                 // reference_l[i*BLOCK_SIZE + j] = referrence[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE +  j + 1];
-                vec_vvcopy_asm(BLOCK_SIZE, &reference_l[i*BLOCK_SIZE], &referrence[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE + 1]);
+                //vec_vvcopy_asm(BLOCK_SIZE, &reference_l[i*BLOCK_SIZE], &referrence[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE + 1]);
             }
 
             // Copy input_itemsets to local memory
             for ( int i = 0; i < BLOCK_SIZE + 1; ++i )
             {
                 // input_itemsets_l[i*(BLOCK_SIZE + 1) + j] = input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i) + b_index_x*BLOCK_SIZE +  j];
-                vec_vvcopy_asm(BLOCK_SIZE + 1, &input_itemsets_l[i*(BLOCK_SIZE + 1)], &input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i) + b_index_x*BLOCK_SIZE]);
+                //vec_vvcopy_asm(BLOCK_SIZE + 1, &input_itemsets_l[i*(BLOCK_SIZE + 1)], &input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i) + b_index_x*BLOCK_SIZE]);
             }
 
             // Compute
@@ -266,7 +266,7 @@ void nw_optimized_hwacha(int *input_itemsets, int *output_itemsets, int *referre
             for ( int i = 0; i < BLOCK_SIZE; ++i )
             {
                 //input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE +  j + 1] = input_itemsets_l[(i + 1)*(BLOCK_SIZE+1) + j + 1];
-                vec_vvcopy_asm(BLOCK_SIZE, &input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE + 1], &input_itemsets_l[(i + 1)*(BLOCK_SIZE+1) + 1]);
+                //vec_vvcopy_asm(BLOCK_SIZE, &input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE + 1], &input_itemsets_l[(i + 1)*(BLOCK_SIZE+1) + 1]);
             }
 
         }
@@ -287,14 +287,14 @@ void nw_optimized_hwacha(int *input_itemsets, int *output_itemsets, int *referre
             for ( int i = 0; i < BLOCK_SIZE; ++i )
             {
                 //reference_l[i*BLOCK_SIZE + j] = referrence[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE +  j + 1];
-                vec_vvcopy_asm(BLOCK_SIZE, &reference_l[i*BLOCK_SIZE], &referrence[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE + 1]);
+                //vec_vvcopy_asm(BLOCK_SIZE, &reference_l[i*BLOCK_SIZE], &referrence[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE + 1]);
             }
 
             // Copy input_itemsets to local memory
             for ( int i = 0; i < BLOCK_SIZE + 1; ++i )
             {
                 //input_itemsets_l[i*(BLOCK_SIZE + 1) + j] = input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i) + b_index_x*BLOCK_SIZE +  j];
-                vec_vvcopy_asm(BLOCK_SIZE + 1, &input_itemsets_l[i*(BLOCK_SIZE + 1)], &input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i) + b_index_x*BLOCK_SIZE]);
+                //vec_vvcopy_asm(BLOCK_SIZE + 1, &input_itemsets_l[i*(BLOCK_SIZE + 1)], &input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i) + b_index_x*BLOCK_SIZE]);
             }
 
             // Compute
@@ -312,7 +312,7 @@ void nw_optimized_hwacha(int *input_itemsets, int *output_itemsets, int *referre
             for ( int i = 0; i < BLOCK_SIZE; ++i )
             {
                 //input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE +  j + 1] = input_itemsets_l[(i + 1)*(BLOCK_SIZE+1) + j +1];
-                vec_vvcopy_asm(BLOCK_SIZE, &input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE + 1], &input_itemsets_l[(i + 1)*(BLOCK_SIZE+1) + 1]);
+                //vec_vvcopy_asm(BLOCK_SIZE, &input_itemsets[max_cols*(b_index_y*BLOCK_SIZE + i + 1) + b_index_x*BLOCK_SIZE + 1], &input_itemsets_l[(i + 1)*(BLOCK_SIZE+1) + 1]);
             }
         }
     }

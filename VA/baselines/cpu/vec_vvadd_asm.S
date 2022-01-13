@@ -6,16 +6,11 @@
 .globl vec_vvadd_asm
 .type  vec_vvadd_asm,@function
 
-# assumes calling convention:
-# a0 has int n
-# a1 has int * result  <---
-# a2 has int * x
-# a3 has int * y
-
+### Rocket execution part ###
 vec_vvadd_asm:
     vsetcfg 3, 1
 stripmine:
-    vsetvl t0, a0 # a0 is requested vec len, actual is placed in t0
+    vsetvl t0, a0
     vmca va0, a2
     vmca va1, a3
     vmca va2, a1
@@ -30,6 +25,7 @@ stripmine:
     fence
     ret
 
+### Hwacha execution part ###
 # vector thread asm
 .align 3
 vvadd_v:

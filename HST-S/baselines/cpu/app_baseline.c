@@ -183,6 +183,7 @@ int main(int argc, char **argv) {
     else {
         memset(histo_host, 0, p.bins * sizeof(unsigned int));
         memset(histo_hwacha, 0, p.bins * sizeof(unsigned int));
+        memset(histo_host_4, 0, p.bins * sizeof(unsigned int));
     }
 
     Timer timer;
