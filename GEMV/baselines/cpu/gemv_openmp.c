@@ -2,152 +2,77 @@
 #include <stdio.h>
 #include "../../support/timer.h"
 #include "gemv_utils.h"
-#include <sys/mman.h>
-#include <omp.h>
-#include <stdbool.h>
-#include <math.h>
-
-size_t m, m_; // m_ : rows
-size_t n, n_; // n_ : cols
-size_t k, k_;
 
 int main(int argc, char *argv[])
 {
-  if (mlockall(MCL_CURRENT | MCL_FUTURE)) {
-      perror("mlockall failed:");
-      return 0;
-  }
+  const size_t rows = 20480;
+  const size_t cols = 8192;
 
-  //m_ = 20480;
-  //n_ = 8192;
-  //k_ = 8001;
+  double **A, *b, *x;
 
-  m_ = 1001;
-  n_ = 1000;
-  k_ = 999;
-  
-  m = m_ + 4 - m_%4;
-  n = n_ + 4 - n_%4;
-  k = k_ + 4 - k_%4;
+  b = (double*) malloc(sizeof(double)*rows);
+  x = (double*) malloc(sizeof(double)*cols);
 
-  double *A, *b, *b2, *b3, *x;
-  
-  A = (double*) malloc(sizeof(double)*m*n);
-  b = (double*) malloc(sizeof(double)*m*k);
-  b2 = (double*) malloc(sizeof(double)*m*k);
-  b3 = (double*) malloc(sizeof(double)*m*k);
-  x = (double*) malloc(sizeof(double)*n*k);
+  allocate_dense(rows, cols, &A);
 
-  make_hilbert_mat(m, n, m_, n_, A);
-  make_hilbert_mat(n, k, n_, k_, x);
+  make_hilbert_mat(rows,cols, &A);
 
-  #pragma omp for
-  for (size_t p = 0; p < m; p++) {
-    for (size_t q = 0; q < k; q++) {
-      b[p*k+q] = (double) 0.0;
-      b2[p*k+q] = (double) 0.0;
-      b3[p*k+q] = (double) 0.0;
+#pragma omp parallel
+    {
+#pragma omp for
+    for (size_t i = 0; i < cols; i++) {
+      x[i] = (double) i+1 ;
     }
-  }
+
+#pragma omp for
+    for (size_t i = 0; i < rows; i++) {
+      b[i] = (double) 0.0;
+    }
+    }
 
   Timer timer;
   start(&timer, 0, 0);
-  gemv(A, x, m, n, k, b, 1); 
-  stop(&timer, 0);
 
-  start(&timer, 1, 0);
-  vec_dgemm_opt_c(m, n, k, b2, A, x);
-  stop(&timer, 1);
 
-  start(&timer, 2, 0);
-  gemv(A, x, m, n, k, b3, 4); 
-  stop(&timer, 2);
+   gemv(A, x, rows, cols, &b);
+   
+   stop(&timer, 0);
 
-  double sum_1 = sum_vec(b, m, k);
-  double sum_2 = sum_vec(b2, m, k);
-  double sum_3 = sum_vec(b3, m, k);
 
-  bool hwacha_correct = sum_1 == sum_2;
-  bool multi_correct = sum_1 == sum_3;
-
-  for (int p = 0; p < m; p++) {
-    for (int q = 0; q < k; q++) {
-      if (b[p * k + q] != b2[p * k + q]) {
-        printf("%d %d : %30.25lf %30.25lf\n", p, q, b[p * k + q], b2[p * k + q]);
-      }
-    }
-  }
-
-  printf("%30.25lf %30.25lf\n", sum_1, sum_2);
-
-  if (hwacha_correct) {
-      printf("Both works correctly.\n");  
-  } else if (multi_correct) {
-      printf("Hwacha outputs wrong result!\n");      
-  } else if (hwacha_correct) {
-  	printf("Hwacha works correctly, but not multi-threading\n");
-  } else {
-    printf("Both wrong\n");
-  }
-
-  printf("******************************\n");
-  printf("CPU ");
-  print(&timer, 0, 1);
-  printf("\n");
-  printf("Hwacha ");
-  print(&timer, 1, 1);
-  printf("\n");
-  printf("4 threads ");
-  print(&timer, 2, 1);
-  printf("\n");
+    printf("Kernel ");
+    print(&timer, 0, 1);
+    printf("\n");
 
 #if 0
-  print_vec(x, m_);
-  print_mat(A, m_, n_);
-  print_vec(b, m_);
+  print_vec(x, rows);
+  print_mat(A, rows, cols);
+  print_vec(b, rows);
 #endif
 
-  free(A);
-  free(b);
-  free(b2);
-  free(b3);
-  free(x); 
-
-  munlockall();
-
+  printf("sum(x) = %f, sum(Ax) = %f\n", sum_vec(x,cols), sum_vec(b,rows));
   return 0;
 }
 
-void gemv(double* A, double* x, size_t m, size_t n, size_t k, double* b, int t) {
-  omp_set_num_threads(t);
-  #pragma omp parallel for
-  for (size_t p = 0; p < m; p++) {
-    for (size_t q = 0; q < k; q++) {
-      for (size_t r = 0; r < n; r++) {
-        b[p*k+q] += A[p*n+r]*x[r*k+q];
-      }
+void gemv(double** A, double* x, size_t rows, size_t cols, double** b) {
+#pragma omp parallel for
+  for (size_t i = 0; i < rows; i ++ )
+  for (size_t j = 0; j < cols; j ++ ) {
+    (*b)[i] = (*b)[i] + A[i][j]*x[j];
+  }
+}
+
+void make_hilbert_mat(size_t rows, size_t cols, double*** A) {
+#pragma omp parallel for
+  for (size_t i = 0; i < rows; i++) {
+    for (size_t j = 0; j < cols; j++) {
+      (*A)[i][j] = 1.0/( (double) i + (double) j + 1.0);
     }
   }
 }
 
-void make_hilbert_mat(size_t r, size_t c, size_t r_, size_t c_, double* m) {
-  #pragma omp parallel for
-  for (size_t p = 0; p < r; p++) {
-    for (size_t q = 0; q < c; q++) {
-      if (p < r_ && q < c_) {
-        m[p*c+q] = 1 / ((double) p + (double) q + 1.0);
-      } else {
-        m[p*c+q] = (double) 0.0;
-      }
-    }
-  }
-}
-
-double sum_vec(double* vec, size_t m, size_t k) {
+double sum_vec(double* vec, size_t rows) {
   double sum = 0.0;
-  #pragma omp parallel for reduction(+:sum)
-  for (int p = 0; p < m; p++) 
-    for (int q = 0; q < k; q++)
-      sum = sum + vec[p*k+q];
+#pragma omp parallel for reduction(+:sum)
+  for (int i = 0; i < rows; i++) sum = sum + vec[i];
   return sum;
 }

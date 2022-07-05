@@ -31,7 +31,6 @@ static struct COOMatrix readCOOMatrix(const char* fileName) {
     // Initialize fields
     FILE* fp = fopen(fileName, "r");
     assert(fscanf(fp, "%u", &cooMatrix.numRows));
-
     if(cooMatrix.numRows%2 == 1) {
         PRINT_WARNING("Reading matrix %s: number of rows must be even. Padding with an extra row.", fileName);
         cooMatrix.numRows++;

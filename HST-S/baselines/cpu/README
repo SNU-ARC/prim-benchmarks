@@ -6,7 +6,7 @@ Compilation instructions:
 
 Execution instructions
 
-    ./hist -i 1006632960 -t 4
+    ./hist -y 1006632960 -t 4
 
 For more options:
 
